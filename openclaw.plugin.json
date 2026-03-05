@@ -40,6 +40,16 @@
       "description": "Retrieve the full plan graph (nodes and edges) for a given project"
     },
     {
+      "name": "astro_create_project",
+      "gatewayMethod": "astro.projects.create",
+      "description": "Create a new Astro project"
+    },
+    {
+      "name": "astro_create_task",
+      "gatewayMethod": "astro.tasks.create",
+      "description": "Create a new task (plan node) in an Astro project"
+    },
+    {
       "name": "astro_run_task",
       "gatewayMethod": "astro.dispatch.task",
       "description": "Dispatch a plan task for execution on a registered agent runner"

@@ -86,12 +86,11 @@ export async function getPlan(
     };
   }
 
-  const qs = `?projectId=${encodeURIComponent(input.projectId)}`;
-  const [nodes, edges] = await Promise.all([
-    client.get<PlanNode[]>(`/api/data/plan-nodes${qs}`),
-    client.get<PlanEdge[]>(`/api/data/plan-edges${qs}`),
-  ]);
+  const response = await client.get<{ nodes: PlanNode[]; edges: PlanEdge[] }>(
+    `/api/data/plan/${encodeURIComponent(input.projectId)}`,
+  );
 
+  const { nodes, edges } = response;
   const graph: PlanGraph = { projectId: input.projectId, nodes, edges };
 
   if (nodes.length === 0) {

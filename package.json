@@ -33,6 +33,9 @@
     "url": "git+https://github.com/astro-anywhere/openclaw-plugin.git"
   },
   "license": "MIT",
+  "openclaw": {
+    "extensions": ["./dist/index.js"]
+  },
   "publishConfig": {
     "access": "public"
   }

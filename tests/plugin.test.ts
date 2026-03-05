@@ -106,11 +106,13 @@ describe('createPlugin', () => {
     expect(plugin.version).toBe('0.1.0');
   });
 
-  it('registers all four tools', () => {
+  it('registers all six tools', () => {
     const plugin = createPlugin(DEFAULT_CONFIG);
     expect([...plugin.tools.keys()]).toEqual(
       expect.arrayContaining([
         'astro_list_projects',
+        'astro_create_project',
+        'astro_create_task',
         'astro_get_plan',
         'astro_run_task',
         'astro_task_status',
@@ -181,10 +183,7 @@ describe('astro_get_plan', () => {
   ];
 
   it('returns plan graph summary with node and edge counts', async () => {
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => mockNodes })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => mockEdges });
-    vi.stubGlobal('fetch', mockFetch);
+    vi.stubGlobal('fetch', makeFetch(200, { nodes: mockNodes, edges: mockEdges }));
 
     const plugin = createPlugin(DEFAULT_CONFIG);
     const result = await plugin.invoke('astro_get_plan', { projectId: 'proj-1' });
@@ -207,10 +206,7 @@ describe('astro_get_plan', () => {
   });
 
   it('returns empty-state message when project has no nodes', async () => {
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => [] })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => [] });
-    vi.stubGlobal('fetch', mockFetch);
+    vi.stubGlobal('fetch', makeFetch(200, { nodes: [], edges: [] }));
 
     const plugin = createPlugin(DEFAULT_CONFIG);
     const result = await plugin.invoke('astro_get_plan', { projectId: 'proj-empty' });
@@ -364,5 +360,69 @@ describe('astro_task_status', () => {
     expect(result.metadata?.isTerminal).toBe(true);
     expect(result.metadata?.isSuccess).toBe(true);
     expect(result.content[0].text).toContain('auto-verified');
+  });
+});
+
+// ── astro_create_project ──────────────────────────────────────────────────────
+
+describe('astro_create_project', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('creates a project and returns ID', async () => {
+    vi.stubGlobal('fetch', makeFetch(200, { id: 'proj-new', name: 'My Project', number: 1 }));
+
+    const plugin = createPlugin(DEFAULT_CONFIG);
+    const result = await plugin.invoke('astro_create_project', { name: 'My Project', description: 'A test project' });
+
+    expect(result.isError).toBeFalsy();
+    expect(result.content[0].text).toContain('Project created');
+    expect(result.content[0].text).toContain('proj-new');
+    expect(result.metadata?.projectId).toBe('proj-new');
+  });
+
+  it('returns error for missing name', async () => {
+    const plugin = createPlugin(DEFAULT_CONFIG);
+    const result = await plugin.invoke('astro_create_project', { name: '' });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('name is required');
+  });
+});
+
+// ── astro_create_task ─────────────────────────────────────────────────────────
+
+describe('astro_create_task', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('creates a task and returns node ID', async () => {
+    vi.stubGlobal('fetch', makeFetch(201, { ok: true, number: 1 }));
+
+    const plugin = createPlugin(DEFAULT_CONFIG);
+    const result = await plugin.invoke('astro_create_task', {
+      projectId: 'proj-1',
+      title: 'Build the thing',
+      priority: 'high',
+      estimate: 'M',
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(result.content[0].text).toContain('Task created');
+    expect(result.content[0].text).toContain('Build the thing');
+    expect(result.metadata?.projectId).toBe('proj-1');
+    expect(result.metadata?.nodeId).toBeDefined();
+  });
+
+  it('returns error for missing projectId', async () => {
+    const plugin = createPlugin(DEFAULT_CONFIG);
+    const result = await plugin.invoke('astro_create_task', { projectId: '', title: 'Test' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('projectId is required');
+  });
+
+  it('returns error for missing title', async () => {
+    const plugin = createPlugin(DEFAULT_CONFIG);
+    const result = await plugin.invoke('astro_create_task', { projectId: 'proj-1', title: '' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('title is required');
   });
 });
