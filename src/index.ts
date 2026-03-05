@@ -17,6 +17,7 @@ import { listProjects } from './tools/list-projects.js';
 import { getPlan } from './tools/get-plan.js';
 import { createProject } from './tools/create-project.js';
 import { createTask } from './tools/create-task.js';
+import { convertToProject } from './tools/convert-to-project.js';
 import { runTask } from './tools/run-task.js';
 import { taskStatus } from './tools/task-status.js';
 
@@ -39,6 +40,8 @@ export { createProjectToolDef, createProject } from './tools/create-project.js';
 export type { CreateProjectInput } from './tools/create-project.js';
 export { createTaskToolDef, createTask } from './tools/create-task.js';
 export type { CreateTaskInput } from './tools/create-task.js';
+export { convertToProjectToolDef, convertToProject } from './tools/convert-to-project.js';
+export type { ConvertToProjectInput } from './tools/convert-to-project.js';
 export { runTaskToolDef, runTask } from './tools/run-task.js';
 export type { DispatchTaskResponse, RunTaskInput } from './tools/run-task.js';
 export { taskStatusToolDef, taskStatus } from './tools/task-status.js';
@@ -53,6 +56,7 @@ import { listProjectsToolDef } from './tools/list-projects.js';
 import { getPlanToolDef } from './tools/get-plan.js';
 import { createProjectToolDef } from './tools/create-project.js';
 import { createTaskToolDef } from './tools/create-task.js';
+import { convertToProjectToolDef } from './tools/convert-to-project.js';
 import { runTaskToolDef } from './tools/run-task.js';
 import { taskStatusToolDef } from './tools/task-status.js';
 
@@ -68,6 +72,7 @@ export function createPlugin(config: PluginConfig): OpenClawPlugin {
     [getPlanToolDef.name, { definition: getPlanToolDef, handler: (input) => getPlan(client, input as { projectId: string }) }],
     [createProjectToolDef.name, { definition: createProjectToolDef, handler: (input) => createProject(client, input as { name: string; [k: string]: unknown }) }],
     [createTaskToolDef.name, { definition: createTaskToolDef, handler: (input) => createTask(client, input as { projectId: string; title: string; [k: string]: unknown }) }],
+    [convertToProjectToolDef.name, { definition: convertToProjectToolDef, handler: (input) => convertToProject(client, input as { nodeId: string; projectId: string; [k: string]: unknown }) }],
     [runTaskToolDef.name, { definition: runTaskToolDef, handler: (input) => runTask(client, input as { nodeId: string; projectId: string; [k: string]: unknown }) }],
     [taskStatusToolDef.name, { definition: taskStatusToolDef, handler: (input) => taskStatus(client, input as { executionId: string }) }],
   ]);
@@ -182,6 +187,17 @@ export default function register(api: GatewayPluginApi): void {
     parameters: makeJsonSchemaParameters(createTaskToolDef.inputSchema),
     async execute(_id, params) {
       return createTask(client, params as { projectId: string; title: string; [k: string]: unknown });
+    },
+  });
+
+  // Register: astro_convert_to_project
+  api.registerTool({
+    name: 'astro_convert_to_project',
+    label: 'Astro: Convert Task to Project',
+    description: convertToProjectToolDef.description,
+    parameters: makeJsonSchemaParameters(convertToProjectToolDef.inputSchema),
+    async execute(_id, params) {
+      return convertToProject(client, params as { nodeId: string; projectId: string; [k: string]: unknown });
     },
   });
 

@@ -106,13 +106,14 @@ describe('createPlugin', () => {
     expect(plugin.version).toBe('0.1.0');
   });
 
-  it('registers all six tools', () => {
+  it('registers all seven tools', () => {
     const plugin = createPlugin(DEFAULT_CONFIG);
     expect([...plugin.tools.keys()]).toEqual(
       expect.arrayContaining([
         'astro_list_projects',
         'astro_create_project',
         'astro_create_task',
+        'astro_convert_to_project',
         'astro_get_plan',
         'astro_run_task',
         'astro_task_status',
@@ -424,5 +425,94 @@ describe('astro_create_task', () => {
     const result = await plugin.invoke('astro_create_task', { projectId: 'proj-1', title: '' });
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('title is required');
+  });
+});
+
+// ── astro_convert_to_project ──────────────────────────────────────────────────
+
+describe('astro_convert_to_project', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const mockProjects = [
+    { id: 'proj-1', name: 'Source Project', visionDoc: 'Build great things', workingDirectory: '/code', repository: 'https://github.com/org/repo', githubOwner: 'org', githubRepo: 'repo', deliveryMode: 'pr', defaultMachineId: 'machine-1' },
+  ];
+  const mockPlan = {
+    nodes: [
+      { id: 'node-1', title: 'Refactor auth module', description: 'Extract auth into a separate service', content: null, status: 'planned', executionOutput: null, executionError: null, acceptanceCriteria: [{ type: 'test', description: 'Auth tests pass' }] },
+    ],
+    edges: [],
+  };
+
+  it('converts a task to a new project', async () => {
+    const mockFetch = vi.fn()
+      // First call: GET /api/data/projects
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => mockProjects })
+      // Second call: GET /api/data/plan/:projectId
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => mockPlan })
+      // Third call: POST /api/data/projects (create new project)
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ id: 'proj-new', name: 'Refactor auth module', number: 2 }) });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const plugin = createPlugin(DEFAULT_CONFIG);
+    const result = await plugin.invoke('astro_convert_to_project', {
+      nodeId: 'node-1',
+      projectId: 'proj-1',
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(result.content[0].text).toContain('converted to project');
+    expect(result.content[0].text).toContain('Refactor auth module');
+    expect(result.metadata?.newProjectId).toBe('proj-new');
+    expect(result.metadata?.sourceNodeId).toBe('node-1');
+
+    // Verify the new project was created with enriched description
+    const createCall = mockFetch.mock.calls[2] as [string, RequestInit];
+    const body = JSON.parse(createCall[1].body as string) as Record<string, unknown>;
+    expect(body['name']).toBe('Refactor auth module');
+    expect(body['description']).toContain('Extract auth into a separate service');
+    expect(body['description']).toContain('Auth tests pass');
+    expect(body['visionDoc']).toBe('Build great things');
+    expect(body['repository']).toBe('https://github.com/org/repo');
+  });
+
+  it('uses custom project name when provided', async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => mockProjects })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => mockPlan })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ id: 'proj-new', name: 'Auth Service', number: 2 }) });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const plugin = createPlugin(DEFAULT_CONFIG);
+    const result = await plugin.invoke('astro_convert_to_project', {
+      nodeId: 'node-1',
+      projectId: 'proj-1',
+      newProjectName: 'Auth Service',
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(result.metadata?.newProjectName).toBe('Auth Service');
+  });
+
+  it('returns error for missing nodeId', async () => {
+    const plugin = createPlugin(DEFAULT_CONFIG);
+    const result = await plugin.invoke('astro_convert_to_project', { nodeId: '', projectId: 'proj-1' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('nodeId is required');
+  });
+
+  it('returns error when node not found', async () => {
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => mockProjects })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ nodes: [], edges: [] }) });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const plugin = createPlugin(DEFAULT_CONFIG);
+    const result = await plugin.invoke('astro_convert_to_project', {
+      nodeId: 'nonexistent',
+      projectId: 'proj-1',
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('not found');
   });
 });

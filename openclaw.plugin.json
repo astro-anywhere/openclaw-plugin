@@ -50,6 +50,11 @@
       "description": "Create a new task (plan node) in an Astro project"
     },
     {
+      "name": "astro_convert_to_project",
+      "gatewayMethod": "astro.tasks.convertToProject",
+      "description": "Convert a plan task into a standalone Astro project"
+    },
+    {
       "name": "astro_run_task",
       "gatewayMethod": "astro.dispatch.task",
       "description": "Dispatch a plan task for execution on a registered agent runner"
