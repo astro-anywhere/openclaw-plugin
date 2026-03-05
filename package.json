@@ -1,0 +1,39 @@
+{
+  "name": "@astroanywhere/openclaw-plugin",
+  "version": "0.1.0",
+  "description": "OpenClaw plugin that exposes Astro project/plan/task management as gateway tools",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "openclaw.plugin.json"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "typescript": "~5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/astro-anywhere/openclaw-plugin.git"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}
