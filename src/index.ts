@@ -12,6 +12,9 @@
  *   Gateway loads this module → calls register(api) → tools available to agents
  */
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 import { AstroClient } from './client.js';
 import { listProjects } from './tools/list-projects.js';
 import { getPlan } from './tools/get-plan.js';
@@ -20,6 +23,32 @@ import { createTask } from './tools/create-task.js';
 import { convertToProject } from './tools/convert-to-project.js';
 import { runTask } from './tools/run-task.js';
 import { taskStatus } from './tools/task-status.js';
+
+// ---------------------------------------------------------------------------
+// Agent runner config fallback
+// ---------------------------------------------------------------------------
+
+interface AgentRunnerConfig {
+  serverUrl?: string;
+  authToken?: string;
+}
+
+/**
+ * Read ~/.astro/config.json to reuse the agent runner's server URL and auth token.
+ * Returns empty object if the file doesn't exist or can't be parsed.
+ */
+function readAgentRunnerConfig(): AgentRunnerConfig {
+  try {
+    const configPath = join(homedir(), '.astro', 'config.json');
+    const raw = JSON.parse(readFileSync(configPath, 'utf-8'));
+    return {
+      serverUrl: raw.serverUrl || undefined,
+      authToken: raw.authToken || undefined,
+    };
+  } catch {
+    return {};
+  }
+}
 
 // Re-exports for programmatic usage
 export { AstroClient, AstroApiError } from './client.js';
@@ -138,12 +167,16 @@ function makeJsonSchemaParameters(schema: {
 
 export default function register(api: GatewayPluginApi): void {
   const cfg = api.pluginConfig as { serverUrl?: string; authToken?: string; teamId?: string };
-  const serverUrl = cfg.serverUrl || 'https://api.astroanywhere.com';
-  const authToken = cfg.authToken || '';
+  const agentCfg = readAgentRunnerConfig();
+  const serverUrl = cfg.serverUrl || agentCfg.serverUrl || 'https://api.astroanywhere.com';
+  const authToken = cfg.authToken || agentCfg.authToken || '';
   const teamId = cfg.teamId || undefined;
 
   const client = new AstroClient({ serverUrl, authToken, teamId });
 
+  if (agentCfg.authToken && !cfg.authToken) {
+    api.logger.info(`[astro] Using auth token from ~/.astro/config.json`);
+  }
   api.logger.info(`[astro] Connecting to Astro backend at ${serverUrl}`);
 
   // Register: astro_list_projects
