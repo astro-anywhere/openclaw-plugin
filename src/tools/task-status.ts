@@ -2,7 +2,7 @@
  * astro_task_status tool
  *
  * Returns the current execution status and output for a dispatched task by calling
- * GET /api/data/task-executions/:executionId on the Astro backend.
+ * GET /api/data/executions on the Astro backend and finding the matching execution.
  *
  * Gateway method: astro.dispatch.taskStatus
  */
@@ -12,6 +12,24 @@ import type { OpenClawToolDefinition, OpenClawToolResult } from '../types.js';
 
 // ── API response shape ────────────────────────────────────────────────────────
 
+/** Shape returned by the GET /api/data/executions endpoint (per entry). */
+interface ExecutionEntry {
+  executionId: string;
+  nodeId: string;
+  projectId: string;
+  status: string;
+  streamText: string | null;
+  error: string | null;
+  machineId: string | null;
+  sessionId: string | null;
+  providerId: string | null;
+  providerName: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  durationMs: number | null;
+}
+
+/** Public type exposed to consumers of this tool. */
 export interface TaskExecution {
   id: string;
   nodeId: string;
@@ -21,13 +39,9 @@ export interface TaskExecution {
   error: string | null;
   startedAt: string | null;
   completedAt: string | null;
-  model: string | null;
-  tokensInput: number | null;
-  tokensOutput: number | null;
-  costUsd: number | null;
-  turnCount: number | null;
   providerId: string | null;
-  providerSessionId: string | null;
+  providerName: string | null;
+  durationMs: number | null;
 }
 
 // ── Tool definition ───────────────────────────────────────────────────────────
@@ -84,9 +98,34 @@ export async function taskStatus(
     };
   }
 
-  const execution = await client.get<TaskExecution>(
-    `/api/data/task-executions/${encodeURIComponent(input.executionId)}`,
+  // GET /api/data/executions returns a map keyed by nodeId
+  const allExecutions = await client.get<Record<string, ExecutionEntry>>('/api/data/executions');
+
+  // Find the entry matching the requested executionId
+  const entry = Object.values(allExecutions).find(
+    (e) => e.executionId === input.executionId,
   );
+
+  if (!entry) {
+    return {
+      content: [{ type: 'text', text: `Execution "${input.executionId}" not found.` }],
+      isError: true,
+    };
+  }
+
+  const execution: TaskExecution = {
+    id: entry.executionId,
+    nodeId: entry.nodeId,
+    projectId: entry.projectId,
+    status: entry.status,
+    output: entry.streamText,
+    error: entry.error,
+    startedAt: entry.startedAt,
+    completedAt: entry.completedAt,
+    providerId: entry.providerId,
+    providerName: entry.providerName,
+    durationMs: entry.durationMs,
+  };
 
   const lines: string[] = [
     `Execution: ${execution.id}`,
@@ -102,15 +141,11 @@ export async function taskStatus(
     lines.push(`  Completed  : ${execution.completedAt}`);
   }
 
-  // Usage metrics
-  if (execution.model) {
-    lines.push(`  Model      : ${execution.model}`);
+  if (execution.providerName) {
+    lines.push(`  Provider   : ${execution.providerName}`);
   }
-  if (execution.turnCount !== null) {
-    lines.push(`  Turns      : ${execution.turnCount}`);
-  }
-  if (execution.costUsd !== null) {
-    lines.push(`  Cost       : $${execution.costUsd.toFixed(4)}`);
+  if (execution.durationMs !== null) {
+    lines.push(`  Duration   : ${(execution.durationMs / 1000).toFixed(1)}s`);
   }
 
   const isTerminal = ['auto_verified', 'completed', 'pruned', 'error'].includes(execution.status);

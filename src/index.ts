@@ -138,7 +138,7 @@ function makeJsonSchemaParameters(schema: {
 
 export default function register(api: GatewayPluginApi): void {
   const cfg = api.pluginConfig as { serverUrl?: string; authToken?: string; teamId?: string };
-  const serverUrl = cfg.serverUrl || 'http://localhost:3001';
+  const serverUrl = cfg.serverUrl || 'https://api.astroanywhere.com';
   const authToken = cfg.authToken || '';
   const teamId = cfg.teamId || undefined;
 
