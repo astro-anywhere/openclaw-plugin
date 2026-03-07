@@ -1,5 +1,5 @@
 /**
- * Unit tests for @astroanywhere/openclaw-plugin
+ * Unit tests for @astroanywhere/astro
  *
  * All HTTP calls to the Astro API are intercepted via vi.stubGlobal('fetch', ...)
  * so these tests run without a real server.

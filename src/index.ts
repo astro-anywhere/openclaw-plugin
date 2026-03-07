@@ -1,5 +1,5 @@
 /**
- * @astroanywhere/openclaw-plugin — OpenClaw Gateway Plugin
+ * @astroanywhere/astro — OpenClaw Gateway Plugin
  *
  * Registers Astro's project/plan/task management as OpenClaw gateway tools:
  *
