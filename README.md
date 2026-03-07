@@ -1,4 +1,4 @@
-# @astroanywhere/openclaw-plugin
+# @astroanywhere/astro
 
 OpenClaw gateway plugin for [Astro](https://github.com/astro-anywhere/astro) — exposes project/plan/task management as tools available to OpenClaw agents.
 
@@ -17,7 +17,7 @@ OpenClaw gateway plugin for [Astro](https://github.com/astro-anywhere/astro) —
 ## Install
 
 ```bash
-openclaw plugins install @astroanywhere/openclaw-plugin
+openclaw plugins install @astroanywhere/astro
 openclaw config set plugins.entries.astro.config.serverUrl "https://api.astroanywhere.com"
 openclaw gateway restart
 ```

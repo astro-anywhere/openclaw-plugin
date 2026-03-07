@@ -1,6 +1,6 @@
 {
-  "name": "@astroanywhere/openclaw-plugin",
-  "version": "0.1.0",
+  "name": "@astroanywhere/astro",
+  "version": "0.1.1",
   "description": "OpenClaw plugin that exposes Astro project/plan/task management as gateway tools",
   "type": "module",
   "main": "./dist/index.js",
