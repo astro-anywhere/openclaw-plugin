@@ -34,10 +34,35 @@ interface AgentRunnerConfig {
 }
 
 /**
- * Read ~/.astro/config.json to reuse the agent runner's server URL and auth token.
- * Returns empty object if the file doesn't exist or can't be parsed.
+ * Read the agent runner's config to reuse its server URL and auth token.
+ *
+ * The agent runner uses the `conf` library which stores config at:
+ *   - macOS: ~/Library/Preferences/astro-agent-nodejs/config.json
+ *   - Linux: ~/.config/astro-agent-nodejs/config.json
+ *   - Windows: %APPDATA%/astro-agent-nodejs/config.json
+ *
+ * Falls back to legacy ~/.astro/config.json if the conf-based config isn't found.
  */
 function readAgentRunnerConfig(): AgentRunnerConfig {
+  // Try conf-based config first (current agent runner)
+  const confPaths = [
+    join(homedir(), 'Library', 'Preferences', 'astro-agent-nodejs', 'config.json'), // macOS
+    join(homedir(), '.config', 'astro-agent-nodejs', 'config.json'), // Linux
+  ];
+
+  for (const configPath of confPaths) {
+    try {
+      const raw = JSON.parse(readFileSync(configPath, 'utf-8'));
+      return {
+        serverUrl: raw.apiUrl || raw.serverUrl || undefined,
+        authToken: raw.accessToken || raw.authToken || undefined,
+      };
+    } catch {
+      // Try next path
+    }
+  }
+
+  // Legacy fallback: ~/.astro/config.json
   try {
     const configPath = join(homedir(), '.astro', 'config.json');
     const raw = JSON.parse(readFileSync(configPath, 'utf-8'));
@@ -168,7 +193,7 @@ function makeJsonSchemaParameters(schema: {
 export default function register(api: GatewayPluginApi): void {
   const cfg = api.pluginConfig as { serverUrl?: string; authToken?: string; teamId?: string };
   const agentCfg = readAgentRunnerConfig();
-  const serverUrl = cfg.serverUrl || agentCfg.serverUrl || 'https://api.astroanywhere.com';
+  const serverUrl = cfg.serverUrl || agentCfg.serverUrl || 'https://astro-backend-deploy.fly.dev';
   const authToken = cfg.authToken || agentCfg.authToken || '';
   const teamId = cfg.teamId || undefined;
 
