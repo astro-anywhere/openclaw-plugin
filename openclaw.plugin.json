@@ -5,7 +5,7 @@
   "description": "Exposes Astro project, plan, and task management as OpenClaw gateway tools",
   "author": "Astro Anywhere",
   "homepage": "https://github.com/astro-anywhere/astro",
-  "entry": "./src/index.ts",
+  "entry": "./dist/index.js",
   "configSchema": {
     "type": "object",
     "required": ["serverUrl"],
