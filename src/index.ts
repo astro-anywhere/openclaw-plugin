@@ -210,7 +210,7 @@ export default function register(api: GatewayPluginApi): void {
     label: 'Astro: List Projects',
     description: listProjectsToolDef.description,
     parameters: makeJsonSchemaParameters(listProjectsToolDef.inputSchema),
-    async execute(_id, _params) {
+    async execute() {
       return listProjects(client);
     },
   });
