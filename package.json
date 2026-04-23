@@ -1,6 +1,6 @@
 {
   "name": "@astroanywhere/astro",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "OpenClaw plugin that exposes Astro project/plan/task management as gateway tools",
   "type": "module",
   "main": "./dist/index.js",
@@ -34,7 +34,9 @@
   },
   "license": "MIT",
   "openclaw": {
-    "extensions": ["./dist/index.js"]
+    "extensions": [
+      "./dist/index.js"
+    ]
   },
   "publishConfig": {
     "access": "public"
